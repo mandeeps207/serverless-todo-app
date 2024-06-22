@@ -1,43 +1,36 @@
-import sqlite3 from 'sqlite3';
+import { openDB } from 'idb';
 
-const db = new sqlite3.Database(':memory:');
-
-db.serialize(() => {
-  db.run("CREATE TABLE todos (id INTEGER PRIMARY KEY AUTOINCREMENT, task TEXT, completed BOOLEAN)");
+const dbPromise = openDB('todo-db', 1, {
+  upgrade(db) {
+    db.createObjectStore('todos', {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
+  },
 });
 
-export const addTodo = (task, callback) => {
-  db.run("INSERT INTO todos (task, completed) VALUES (?, ?)", [task, false], function(err) {
-    if (err) {
-      return console.error(err.message);
-    }
-    callback(this.lastID);
-  });
+export const addTodo = async (task) => {
+  const db = await dbPromise;
+  const id = await db.add('todos', { task, completed: false });
+  return id;
 };
 
-export const getTodos = (callback) => {
-  db.all("SELECT * FROM todos", [], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    callback(rows);
-  });
+export const getTodos = async () => {
+  const db = await dbPromise;
+  return await db.getAll('todos');
 };
 
-export const updateTodo = (id, completed, callback) => {
-  db.run("UPDATE todos SET completed = ? WHERE id = ?", [completed, id], function(err) {
-    if (err) {
-      return console.error(err.message);
-    }
-    callback();
-  });
+export const updateTodo = async (id, completed) => {
+  const db = await dbPromise;
+  const tx = db.transaction('todos', 'readwrite');
+  const store = tx.objectStore('todos');
+  const todo = await store.get(id);
+  todo.completed = completed;
+  await store.put(todo);
+  await tx.done;
 };
 
-export const deleteTodo = (id, callback) => {
-  db.run("DELETE FROM todos WHERE id = ?", id, function(err) {
-    if (err) {
-      return console.error(err.message);
-    }
-    callback();
-  });
+export const deleteTodo = async (id) => {
+  const db = await dbPromise;
+  await db.delete('todos', id);
 };

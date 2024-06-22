@@ -9,31 +9,27 @@ const App = () => {
     fetchTodos();
   }, []);
 
-  const fetchTodos = () => {
-    getTodos((data) => {
-      setTodos(data);
-    });
+  const fetchTodos = async () => {
+    const data = await getTodos();
+    setTodos(data);
   };
 
-  const handleAddTodo = () => {
+  const handleAddTodo = async () => {
     if (task.trim()) {
-      addTodo(task, (id) => {
-        setTodos([...todos, { id, task, completed: false }]);
-        setTask('');
-      });
+      const id = await addTodo(task);
+      setTodos([...todos, { id, task, completed: false }]);
+      setTask('');
     }
   };
 
-  const handleToggleTodo = (id, completed) => {
-    updateTodo(id, !completed, () => {
-      setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !completed } : todo));
-    });
+  const handleToggleTodo = async (id, completed) => {
+    await updateTodo(id, !completed);
+    setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !completed } : todo));
   };
 
-  const handleDeleteTodo = (id) => {
-    deleteTodo(id, () => {
-      setTodos(todos.filter(todo => todo.id !== id));
-    });
+  const handleDeleteTodo = async (id) => {
+    await deleteTodo(id);
+    setTodos(todos.filter(todo => todo.id !== id));
   };
 
   return (
